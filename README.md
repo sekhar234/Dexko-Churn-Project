@@ -8,8 +8,8 @@ This repository is a **fully offline, synthetic-data replica** of the current De
 - Phase 2 — synthetic EDW + behavioral generator: **complete**
 - Phase 3 — local Monday weekly snapshot layer: **complete**
 - Phase 4 — local `02_load_data` certified-data layer: **complete**
-- Phase 5 — feature engineering: **next**
-- Phase 6 — eligibility / H14 labels: pending
+- Phase 5 — feature engineering: **implemented on `feature/phase5-feature-engineering`**
+- Phase 6 — eligibility / H14 labels: next
 - Phase 7 — XGBoost / MLflow: pending
 - Phase 8 — scoring / SHAP: pending
 - Phase 9 — monitoring: pending
@@ -42,26 +42,12 @@ Monitoring + outputs
 Streamlit dashboard
 ```
 
-## Synthetic source layer
-
-The generator creates local equivalents of the five EDW tables used by the current churn pipeline:
-
-- `dimcustomer`
-- `factsalesinvoice`
-- `dimproduct`
-- `dimwarehouselocation`
-- `dimcustomershipto`
-
-It also generates behavioral scenarios including stable, growing, declining, category churn, account churn, seasonal, sporadic, new customer, price shock, lead-time problem, migration, and false alarm.
-
-Generated datasets are intentionally **not committed to Git**. They are deterministic and rebuilt locally from seed 42 by default.
-
-## Windows quick start
+## Quick start
 
 ```powershell
 git clone https://github.com/sekhar234/Dexko-Churn-Project.git
 cd Dexko-Churn-Project
-git checkout feature/offline-local-replica
+git checkout feature/phase5-feature-engineering
 
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -69,86 +55,89 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Generate a small synthetic dataset:
+For a fast complete local feature-engineering run, start with the new `tiny` profile:
 
 ```powershell
-python scripts\generate_synthetic_data.py --scale small
-```
-
-Run the local Monday pipeline:
-
-```powershell
+python scripts\generate_synthetic_data.py --scale tiny
 python scripts\run_monday.py
-```
-
-Validate it:
-
-```powershell
 python scripts\validate_monday.py
-```
-
-Run automated tests:
-
-```powershell
+python scripts\run_feature_engineering.py
 pytest -q
 ```
 
-## Current outputs
-
-After the Monday pipeline, local generated data includes:
+## Current generated outputs
 
 ```text
 data/
 ├── source/edw/
-│   ├── dimcustomer
-│   ├── factsalesinvoice
-│   ├── dimproduct
-│   ├── dimwarehouselocation
-│   └── dimcustomershipto
 ├── edw_cache/
-│   ├── jdbc_customer_weekly
-│   ├── jdbc_invoice_weekly
-│   ├── jdbc_product_weekly
-│   ├── jdbc_warehouse_weekly
-│   ├── jdbc_shiptokey_weekly
-│   ├── master_weekly
-│   ├── snapshot_registry
-│   └── zipcode_anomaly_eda
-└── certified/
-    ├── dex_v2_base
-    └── dex_v2_cust_attrs
+├── certified/
+│   ├── dex_v2_base
+│   └── dex_v2_cust_attrs
+└── features/
+    ├── dex_v2_checkpoint_billto_panel_zipcode
+    ├── dex_v2_checkpoint_category_panel_zipcode
+    ├── dex_v2_customer_peak_months_zipcode
+    └── dex_v2_customer_top_categories_zipcode
 ```
 
-## Deterministic small-run reference
+## Feature contracts
 
-Using seed 42, the verified local reference run produced approximately:
+The latest production configuration defines:
+
+- **29 bill-to model features**
+- **44 category model features**
+
+The offline implementation mirrors those explicit contracts in `src/features/contracts.py`.
+
+It also reproduces the Monday point-in-time visibility rule, running purchase-cycle history, rolling spend/frequency windows, momentum, price, lead-time, tenure, category breadth, AOV, volatility, category share/mix, peak-month, and Pareto-category logic.
+
+## Local validation
+
+A complete tiny end-to-end run with seed 42 produced:
+
+- source invoice rows: **7,232**
+- certified `dex_v2_base`: **4,872**
+- certified `dex_v2_cust_attrs`: **28**
+- bill-to panel rows: **20,320**
+- category panel rows: **87,999**
+- peak-month rows: **28**
+- top-category rows: **28**
+- feature counts: **29 bill-to / 44 category**
+- grain assertions: **PASS**
+- lightweight automated suite: **5 passed**
+
+The original small-profile Monday reference remains approximately:
 
 - source invoice rows: **36,277**
-- master rows: **36,277**
-- master join loss: **0.0%**
-- ZIP anomalies routed: **534**
-- certified `dex_v2_base`: **28,250** rows
-- certified `dex_v2_cust_attrs`: **175** Customer × ZIP rows
-- test suite: **4 passing tests**
+- certified `dex_v2_base`: **28,250**
+- certified `dex_v2_cust_attrs`: **175**
+- ZIP anomalies: **534**
 
-These are engineering reference numbers for the synthetic dataset, not production DexKo metrics.
+These are synthetic engineering reference numbers, not production DexKo metrics.
+
+## Performance guidance
+
+Use `tiny` while developing the full historical feature pipeline. A multi-year weekly Customer × ZIP × Category scaffold expands quickly; the `small` and `medium` source profiles can generate hundreds of thousands or millions of feature-panel rows.
+
+## Documented production-parity note
+
+The current shared production exclusive frequency/spend-band wrapper omits `zipcode` from its grouping keys, while the latest feature-engineering notebook explicitly documents ZIP-grain fixes for other rolling features and joins.
+
+The offline implementation includes `zipcode` for those band features so it preserves the stated Customer × ZIP grain. This is explicitly documented in `docs/PHASE_5_FEATURE_ENGINEERING.md`; no production code has been modified.
 
 ## Next phase
 
-Phase 5 will consume only:
+Phase 6 will add:
 
-```text
-data/certified/dex_v2_base
-data/certified/dex_v2_cust_attrs
-```
+- historical label maturity
+- H14 category-loss labels
+- scoring eligibility
+- `score_eligible_cat_14`
+- `y_cat_activeacct_14`
+- validation against the hidden synthetic behavioral ground truth
 
-and create local equivalents of:
+See:
 
-- `dex_v2_checkpoint_category_panel_zipcode`
-- `dex_v2_checkpoint_billto_panel_zipcode`
-- `dex_v2_customer_peak_months_zipcode`
-- `dex_v2_customer_top_categories_zipcode`
-
-The goal is to reproduce the Customer × ZIP × Category weekly grain and the rolling behavioral feature contracts from the latest production churn code.
-
-See `docs/PHASE_3_4_IMPLEMENTATION.md` for the current production-to-local mapping.
+- `docs/PHASE_3_4_IMPLEMENTATION.md`
+- `docs/PHASE_5_FEATURE_ENGINEERING.md`
