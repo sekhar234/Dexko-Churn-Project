@@ -3,6 +3,10 @@ scale: small
 output_format: parquet
 
 scales:
+  tiny:
+    customers: 20
+    products: 36
+    warehouses: 6
   small:
     customers: 100
     products: 48
