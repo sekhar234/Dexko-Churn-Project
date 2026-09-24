@@ -6,7 +6,7 @@ Phase 10 converts the latest Phase 8 category scores into business-facing weekly
 
 The call list is written at:
 
-**Customer × ZIP × Category**
+**Customer × Business Unit × ZIP × Category**
 
 Only rows successfully scored in Phase 8 are included.
 
@@ -28,18 +28,19 @@ Columns:
 2. Customer
 3. Customer Group
 4. Ship-To
-5. Branch
-6. Sales Rep
-7. Category
-8. Risk Score
-9. Risk Tier
-10. Action
-11. Annual Spend
-12. Rev at Risk
-13. Who They Are
-14. Bold Signals
-15. Grey Signals
-16. Scoring Run ID
+5. Business Unit
+6. Branch
+7. Sales Rep
+8. Category
+9. Risk Score
+10. Risk Tier
+11. Action
+12. Annual Spend
+13. Rev at Risk
+14. Who They Are
+15. Bold Signals
+16. Grey Signals
+17. Scoring Run ID
 
 Business calculations:
 
@@ -141,7 +142,7 @@ Every Phase 8 rejected row must have a scoring ineligibility reason.
 
 ### Layer 3
 
-No duplicate Customer × ZIP × Category rows.
+No duplicate Customer × Business Unit × ZIP × Category rows.
 
 The generated workbook is reopened by the Phase 10 validator and checked for:
 
