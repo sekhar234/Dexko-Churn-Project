@@ -5,6 +5,8 @@ CATEGORY_COLUMN = "mgrl1"
 
 BILLTO_ID_COLS = [CUSTOMER_COLUMN, "bulevel1", "zipcode"]
 CATEGORY_ID_COLS = [CUSTOMER_COLUMN, "bulevel1", CATEGORY_COLUMN, "zipcode"]
+BILLTO_KEYS = BILLTO_ID_COLS + ["snapshot_dt"]
+CATEGORY_KEYS = CATEGORY_ID_COLS + ["snapshot_dt"]
 
 BILLTO_FEATURE_COLS = [
     "recency_days_all", "ratio_recency_to_cycle_all", "log_ratio_all",
@@ -44,6 +46,21 @@ CATEGORY_FEATURE_COLS = [
     "spend_logratio_3m_all", "freq_logratio_3m_all",
     "spend_share_365", "spend_share_3m", "mix_shift_share_3m", "recency_delta",
     "mgrl1", "snapshot_month_idx",
+]
+
+# Validation uses the category-specific (non-account-context) subset.
+CATEGORY_CORE_FEATURE_COLS = [
+    "recency_days", "ratio_recency_to_cycle", "log_ratio",
+    "median_cycle_days", "n_gaps_running", "active_months_12_g",
+    "order_to_invoice_days_3m_g",
+    "net_price_per_unit_3m_g", "net_price_per_unit_ratio_3m_g",
+    "freq_0_30_g", "freq_181_365_g",
+    "spend_0_30_g", "spend_181_365_g",
+    "freq_ratio_recent_vs_prior_g", "freq_ratio_mid_vs_older_g",
+    "spend_ratio_recent_vs_prior_g", "freq_share_0_30_in_90_g",
+    "spend_logratio_3m_g", "spend_logratio_6m_g",
+    "freq_logratio_3m_g", "freq_logratio_6m_g",
+    "spend_share_365", "spend_share_3m", "mix_shift_share_3m", "recency_delta",
 ]
 
 FREQ_SPEND_BANDS = [
