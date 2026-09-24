@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 
 import pandas as pd
 import streamlit as st
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from src.dashboard.data import DB_PATH, distinct_values, query, risk_movement, table_exists
 
@@ -17,6 +21,8 @@ st.set_page_config(
 
 def money(value) -> str:
     try:
+        if pd.isna(value):
+            return "$0"
         return "$" + f"{float(value):,.0f}"
     except Exception:
         return "$0"
