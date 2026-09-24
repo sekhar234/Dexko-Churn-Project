@@ -1,143 +1,208 @@
 # DexKo Customer Churn — Fully Offline Local Replica
 
-This repository is a **fully offline, synthetic-data replica** of the current DexKo churn implementation. It requires no Databricks connection and contains no production customer data.
+This repository is a fully offline, synthetic-data replica of the DexKo Customer Churn solution. It requires no Databricks connection and contains no production customer data.
 
-## Current status
+## Project status
+
+All planned implementation phases are complete:
 
 - Phase 1 — source-contract extraction: **complete**
 - Phase 2 — synthetic EDW + behavioral generator: **complete**
-- Phase 3 — local Monday weekly snapshot layer: **complete**
-- Phase 4 — local `02_load_data` certified-data layer: **complete**
-- Phase 5 — feature engineering: **implemented on `feature/phase5-feature-engineering`**
-- Phase 6 — eligibility / H14 labels: next
-- Phase 7 — XGBoost / MLflow: pending
-- Phase 8 — scoring / SHAP: pending
-- Phase 9 — monitoring: pending
-- Phase 10 — Excel/CData outputs: pending
-- Phase 11 — Streamlit dashboard: pending
+- Phase 3 — Monday weekly snapshot layer: **complete**
+- Phase 4 — certified load-data layer: **complete**
+- Phase 5 — feature engineering: **complete**
+- Phase 6 — H14 labels and eligibility: **complete**
+- Phase 7 — XGBoost + local MLflow training: **complete**
+- Phase 8 — weekly scoring + SHAP explainability: **complete**
+- Phase 9 — PSI drift + delayed performance monitoring: **complete**
+- Phase 10 — Excel / audit / CData business outputs: **complete**
+- Phase 11 — DuckDB + Streamlit dashboard: **complete**
 
-## Architecture
+## End-to-end architecture
 
 ```text
 Synthetic EDW
     ↓
-Weekly snapshots + snapshot_registry
-    ↓
-master_weekly
+Weekly snapshots + registry
     ↓
 Certified load-data pipeline
     ↓
-dex_v2_base + dex_v2_cust_attrs
-    ↓
 Feature engineering
     ↓
-Eligibility + H14 labels
+H14 labels + eligibility
     ↓
-XGBoost / local MLflow
+XGBoost training + MLflow
     ↓
-Scoring + SHAP
+Weekly scoring + SHAP
     ↓
-Monitoring + outputs
+Customer risk rollup + reasons
+    ↓
+PSI / performance monitoring
+    ↓
+Excel + audit + CData output
+    ↓
+DuckDB
     ↓
 Streamlit dashboard
 ```
 
-## Quick start
+## Core model contract
+
+- target grain: Customer × Business Unit × ZIP × Category × Snapshot
+- churn horizon: 14 days
+- observation / confirmation window: 180 days
+- label maturity: 194 days
+- live scoring gate: `score_eligible_cat_14`
+- category model features: 44
+- risk tiers:
+  - High: `p_14 >= 0.40`
+  - Medium: `0.20 <= p_14 < 0.40`
+  - Low: `p_14 < 0.20`
+
+The Customer × Business Unit × ZIP rollup uses trailing category spend as weights.
+
+## Environment setup
 
 ```powershell
 git clone https://github.com/sekhar234/Dexko-Churn-Project.git
 cd Dexko-Churn-Project
-git checkout feature/phase5-feature-engineering
 
 py -3.11 -m venv .venv
+Set-ExecutionPolicy -Scope Process Bypass
 .\.venv\Scripts\Activate.ps1
+
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-For a fast complete local feature-engineering run, start with the new `tiny` profile:
+## Full local pipeline
+
+Generate synthetic data:
 
 ```powershell
-python scripts\generate_synthetic_data.py --scale tiny
+python scripts\generate_synthetic_data.py --scale small
+```
+
+Run and validate the weekly data layer:
+
+```powershell
 python scripts\run_monday.py
 python scripts\validate_monday.py
+```
+
+Run feature engineering:
+
+```powershell
 python scripts\run_feature_engineering.py
+```
+
+Run labels and eligibility:
+
+```powershell
+python scripts\run_labels_eligibility.py
+```
+
+Train the H14 model:
+
+```powershell
+python scripts\run_model_training.py
+python scripts\validate_model_training.py
+```
+
+Run weekly scoring:
+
+```powershell
+python scripts\run_weekly_scoring.py
+python scripts\validate_weekly_scoring.py
+```
+
+Run monitoring:
+
+```powershell
+python scripts\run_monitoring.py
+python scripts\validate_monitoring.py
+```
+
+Generate business outputs:
+
+```powershell
+python scripts\run_business_output.py
+python scripts\validate_business_output.py
+```
+
+Build and validate the analytics database:
+
+```powershell
+python scripts\build_dashboard_db.py
+python scripts\validate_dashboard.py
+```
+
+Run all lightweight tests:
+
+```powershell
 pytest -q
 ```
 
-## Current generated outputs
+Launch the dashboard:
 
-```text
-data/
-├── source/edw/
-├── edw_cache/
-├── certified/
-│   ├── dex_v2_base
-│   └── dex_v2_cust_attrs
-└── features/
-    ├── dex_v2_checkpoint_billto_panel_zipcode
-    ├── dex_v2_checkpoint_category_panel_zipcode
-    ├── dex_v2_customer_peak_months_zipcode
-    └── dex_v2_customer_top_categories_zipcode
+```powershell
+python scripts\run_dashboard.py
 ```
 
-## Feature contracts
+## Business outputs
 
-The latest production configuration defines:
+Phase 10 generates:
 
-- **29 bill-to model features**
-- **44 category model features**
+```text
+outputs/
+├── Weekly Call List MM-DD-YY.xlsx
+└── Weekly Call List MM-DD-YY_audit.xlsx
+```
 
-The offline implementation mirrors those explicit contracts in `src/features/contracts.py`.
+It also creates:
 
-It also reproduces the Monday point-in-time visibility rule, running purchase-cycle history, rolling spend/frequency windows, momentum, price, lead-time, tenure, category breadth, AOV, volatility, category share/mix, peak-month, and Pareto-category logic.
+`data/output/dex_v2_cdata_output_snapshot.parquet`
 
-## Local validation
+The main call list carries Customer ID, Customer, Customer Group, Ship-To, Business Unit, Branch, Sales Rep, Category, Risk Score, Risk Tier, Action, Annual Spend, Revenue at Risk, profile context, SHAP signals, and scoring lineage.
 
-A complete tiny end-to-end run with seed 42 produced:
+## Monitoring
 
-- source invoice rows: **7,232**
-- certified `dex_v2_base`: **4,872**
-- certified `dex_v2_cust_attrs`: **28**
-- bill-to panel rows: **20,320**
-- category panel rows: **87,999**
-- peak-month rows: **28**
-- top-category rows: **28**
-- feature counts: **29 bill-to / 44 category**
-- grain assertions: **PASS**
-- lightweight automated suite: **5 passed**
+PSI classification:
 
-The original small-profile Monday reference remains approximately:
+- `< 0.10` → STABLE
+- `0.10–<0.25` → WATCH
+- `>= 0.25` → ACT
 
-- source invoice rows: **36,277**
-- certified `dex_v2_base`: **28,250**
-- certified `dex_v2_cust_attrs`: **175**
-- ZIP anomalies: **534**
+Critical drift features:
 
-These are synthetic engineering reference numbers, not production DexKo metrics.
+- `recency_days`
+- `median_cycle_days`
+- `spend_0_30_g`
 
-## Performance guidance
+A retraining recommendation requires two distinct consecutive ACT snapshots on a critical feature. Automatic retraining remains disabled.
 
-Use `tiny` while developing the full historical feature pipeline. A multi-year weekly Customer × ZIP × Category scaffold expands quickly; the `small` and `medium` source profiles can generate hundreds of thousands or millions of feature-panel rows.
+Actual performance monitoring waits until labels have matured for 194 days.
 
-## Documented production-parity note
+## Dashboard
 
-The current shared production exclusive frequency/spend-band wrapper omits `zipcode` from its grouping keys, while the latest feature-engineering notebook explicitly documents ZIP-grain fixes for other rolling features and joins.
+The Streamlit application provides:
 
-The offline implementation includes `zipcode` for those band features so it preserves the stated Customer × ZIP grain. This is explicitly documented in `docs/PHASE_5_FEATURE_ENGINEERING.md`; no production code has been modified.
+- Executive Overview
+- Customer Workbench
+- Customer 360
+- Category Intelligence
+- Risk Movement
+- Model Health
+- Pipeline Health
 
-## Next phase
+The local DuckDB database is generated at:
 
-Phase 6 will add:
+`data/dashboard/dexko_churn.duckdb`
 
-- historical label maturity
-- H14 category-loss labels
-- scoring eligibility
-- `score_eligible_cat_14`
-- `y_cat_activeacct_14`
-- validation against the hidden synthetic behavioral ground truth
+See `docs/PHASE_11_DASHBOARD.md` for details.
 
-See:
+## Important offline boundary
 
-- `docs/PHASE_3_4_IMPLEMENTATION.md`
-- `docs/PHASE_5_FEATURE_ENGINEERING.md`
+All customer and transaction data in this repository is synthetic.
+
+External production-only integrations such as the SharePoint Account Owner mapping are not fabricated. The audit output explicitly identifies unavailable external mappings.
