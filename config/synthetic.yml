@@ -1,0 +1,67 @@
+seed: 42
+scale: small
+output_format: parquet
+
+scales:
+  small:
+    customers: 100
+    products: 48
+    warehouses: 8
+  medium:
+    customers: 500
+    products: 84
+    warehouses: 12
+  large:
+    customers: 2000
+    products: 120
+    warehouses: 18
+
+dates:
+  start: '2023-01-01'
+  end: '2026-09-21'
+  training_floor: '2024-01-01'
+
+customer_groups:
+  Stocking Dealer: 0.50
+  OEM: 0.30
+  Retailer: 0.08
+  Distributor: 0.05
+  DLR REP: 0.04
+  Internal: 0.03
+
+behaviors:
+  stable: 0.30
+  growing: 0.10
+  declining: 0.14
+  category_churn: 0.14
+  account_churn: 0.05
+  seasonal: 0.08
+  sporadic: 0.06
+  new_customer: 0.05
+  price_shock: 0.03
+  lead_time_problem: 0.025
+  migration: 0.025
+  false_alarm: 0.025
+
+dirty_data:
+  non_dex_invoice_rate: 0.035
+  nonpositive_revenue_rate: 0.006
+  zero_quantity_rate: 0.004
+  null_invoice_date_rate: 0.002
+  invalid_zip_rate: 0.015
+  intercompany_customer_rate: 0.025
+  junk_customer_name_rate: 0.008
+  junk_product_rate: 0.04
+  customer_scd_duplicate_rate: 0.12
+  product_scd_duplicate_rate: 0.08
+
+purchase_behavior:
+  min_categories_per_shipto: 3
+  max_categories_per_shipto: 7
+  min_shiptos_per_customer: 1
+  max_shiptos_per_customer: 3
+  cadence_days_min: 12
+  cadence_days_max: 55
+  base_order_value_min: 250
+  base_order_value_max: 12000
+  noise_sigma: 0.28
