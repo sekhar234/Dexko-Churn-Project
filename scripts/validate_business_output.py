@@ -26,9 +26,9 @@ headers = [ws.cell(1, c).value for c in range(1, len(CALL_LIST_COLUMNS) + 1)]
 excel_rows = max(0, ws.max_row - 1)
 
 risk_scores = [
-    ws.cell(r, 8).value
+    ws.cell(r, 9).value
     for r in range(2, ws.max_row + 1)
-    if ws.cell(r, 8).value is not None
+    if ws.cell(r, 9).value is not None
 ]
 risk_sorted = risk_scores == sorted(risk_scores, reverse=True)
 
