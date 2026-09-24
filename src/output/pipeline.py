@@ -219,6 +219,7 @@ def _make_call_list(
         "Customer": scores[CUSTOMER_COLUMN].fillna(""),
         "Customer Group": scores["customer_group_output"].fillna(""),
         "Ship-To": scores["zipcode"].astype("string").fillna(""),
+        "Business Unit": scores["bulevel1"].fillna(""),
         "Branch": scores["branch_output"].fillna(""),
         "Sales Rep": scores["sales_rep_output"].fillna(""),
         "Category": scores["mgrl1"].fillna(""),
@@ -294,17 +295,18 @@ def _format_call_list(ws, row_count: int) -> None:
         "C": 18,
         "D": 12,
         "E": 14,
-        "F": 20,
-        "G": 26,
-        "H": 12,
+        "F": 14,
+        "G": 20,
+        "H": 26,
         "I": 12,
-        "J": 16,
+        "J": 12,
         "K": 16,
         "L": 16,
-        "M": 60,
-        "N": 70,
+        "M": 16,
+        "N": 60,
         "O": 70,
-        "P": 30,
+        "P": 70,
+        "Q": 30,
     }
     for col, width in widths.items():
         ws.column_dimensions[col].width = width
@@ -313,17 +315,17 @@ def _format_call_list(ws, row_count: int) -> None:
         for cell in row:
             cell.alignment = Alignment(vertical="top", wrap_text=True)
 
-    for cell in ws["N"][1:]:
-        cell.font = Font(bold=True)
     for cell in ws["O"][1:]:
+        cell.font = Font(bold=True)
+    for cell in ws["P"][1:]:
         cell.font = Font(color=GREY_FONT)
 
-    for col in ["K", "L"]:
+    for col in ["L", "M"]:
         for cell in ws[col][1:]:
             cell.number_format = "$#,##0"
 
     if row_count:
-        risk_range = f"H2:H{row_count + 1}"
+        risk_range = f"I2:I{row_count + 1}"
         ws.conditional_formatting.add(
             risk_range,
             CellIsRule(
@@ -381,7 +383,7 @@ def _build_main_workbook(call: pd.DataFrame, path: Path) -> None:
             allow_blank=False,
         )
         ws.add_data_validation(dv)
-        dv.add(f"J2:J{len(call) + 1}")
+        dv.add(f"K2:K{len(call) + 1}")
 
     path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)
@@ -452,7 +454,7 @@ def _validation_tables(
         call["Bold Signals"].astype(str).str.strip().eq("").sum()
     )
     duplicate_bad = int(
-        call.duplicated(["Customer", "Ship-To", "Category"]).sum()
+        call.duplicated(["Customer", "Business Unit", "Ship-To", "Category"]).sum()
     )
 
     checks = [
@@ -462,7 +464,7 @@ def _validation_tables(
         ("Layer 2", "Rev at Risk non-negative", rar_bad, rar_bad == 0),
         ("Layer 2", "Who They Are populated", profile_bad, profile_bad == 0),
         ("Layer 2", "Bold Signals populated", signals_bad, signals_bad == 0),
-        ("Layer 3", "No duplicate call-list grain", duplicate_bad, duplicate_bad == 0),
+        ("Layer 3", "No duplicate Customer x BU x ZIP x Category grain", duplicate_bad, duplicate_bad == 0),
     ]
     validation = pd.DataFrame(
         checks,
