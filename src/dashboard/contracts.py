@@ -14,6 +14,7 @@ REQUIRED_TABLES = [
     "top_categories",
     "reject_log",
     "dashboard_metadata",
+    "pipeline_stage_status",
 ]
 
 OPTIONAL_TABLES = [
