@@ -9,7 +9,7 @@ sys.path.insert(0, str(ROOT))
 metadata_path = ROOT/"artifacts"/"models"/"category_churn_h14"/"metadata.json"
 metrics_path = ROOT/"artifacts"/"models"/"category_churn_h14"/"metrics.json"
 model_path = ROOT/"artifacts"/"models"/"category_churn_h14"/"model.json"
-encoder_path = ROOT/"artifacts"/"models"/"category_churn_h14"/"encoder.joblib"
+encoder_path = ROOT/"artifacts"/"models"/"category_churn_h14"/"encoder.json"
 pred_path = ROOT/"artifacts"/"models"/"category_churn_h14"/"test_predictions.parquet"
 mlflow_db = ROOT/"mlflow.db"
 
@@ -23,6 +23,7 @@ checks = {
     "encoder_exists": encoder_path.exists(),
     "test_predictions_exist": pred_path.exists(),
     "mlflow_db_exists": mlflow_db.exists(),
+    "native_xgboost_api": metadata["training_api"] == "xgboost.train",
     "raw_feature_count_44": metadata["raw_feature_count"] == 44,
     "encoded_features_ge_raw": metadata["encoded_feature_count"] >= 44,
     "two_categorical_features": metadata["categorical_feature_count"] == 2,
@@ -52,9 +53,9 @@ result = {
 
 out = ROOT/"data"/"qa"
 out.mkdir(parents=True, exist_ok=True)
-text = json.dumps(result, indent=2)
-(out/"model_training_qa.json").write_text(text, encoding="utf-8")
-print(text)
+payload_text = json.dumps(result, indent=2)
+(out/"model_training_qa.json").write_text(payload_text, encoding="utf-8")
+print(payload_text)
 
 if result["status"] != "PASS":
     raise SystemExit(1)
