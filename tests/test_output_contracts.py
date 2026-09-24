@@ -2,11 +2,12 @@ from src.output.contracts import CALL_LIST_COLUMNS, VALID_ACTIONS
 
 
 def test_phase10_call_list_contract():
-    assert CALL_LIST_COLUMNS[:7] == [
+    assert CALL_LIST_COLUMNS[:8] == [
         "Customer ID",
         "Customer",
         "Customer Group",
         "Ship-To",
+        "Business Unit",
         "Branch",
         "Sales Rep",
         "Category",
