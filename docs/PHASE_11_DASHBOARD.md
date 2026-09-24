@@ -202,3 +202,23 @@ python scripts\validate_dashboard.py
 pytest -q
 python scripts\run_dashboard.py
 ```
+
+
+## Visual design layer
+
+The dashboard includes an executive visual system on top of the Phase 11 data contract:
+
+- branded dark navigation rail
+- responsive executive page headers
+- KPI cards with consistent semantic accents
+- High / Medium / Low risk colors
+- interactive Plotly charts
+- Customer 360 risk gauge
+- Revenue-at-Risk category visualizations
+- risk-movement visualizations
+- PSI chart with WATCH and ACT governance thresholds
+- styled account-profile cards and data tables
+- Streamlit theme configuration in `.streamlit/config.toml`
+- reusable presentation helpers in `src/dashboard/ui.py`
+
+The visual layer does not alter scoring, SHAP, rollup, monitoring, or business-output calculations.
