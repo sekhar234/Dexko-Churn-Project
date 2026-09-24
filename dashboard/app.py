@@ -252,19 +252,17 @@ def customer_360() -> None:
         )
         st.subheader("Profile")
         st.write(
-            f"**Customer ID:** {p['customer_ids']}  
-"
-            f"**Customer Group:** {p['customer_group']}  
-"
-            f"**Branch:** {p['servicingbranch']}  
-"
-            f"**Sales Rep:** {p['salesrep']}  
-"
-            f"**Credit Limit:** {money(p['credit_limit'])}  
-"
-            f"**Peak Months:** {peaks or 'Unavailable'}  
-"
-            f"**Top Categories:** {p['top_3_categories']}"
+            "\n".join(
+                [
+                    f"**Customer ID:** {p['customer_ids']}",
+                    f"**Customer Group:** {p['customer_group']}",
+                    f"**Branch:** {p['servicingbranch']}",
+                    f"**Sales Rep:** {p['salesrep']}",
+                    f"**Credit Limit:** {money(p['credit_limit'])}",
+                    f"**Peak Months:** {peaks or 'Unavailable'}",
+                    f"**Top Categories:** {p['top_3_categories']}",
+                ]
+            )
         )
 
     st.subheader("Category Risk")
@@ -445,11 +443,13 @@ def model_health() -> None:
         r = retrain.iloc[0]
         st.subheader("Retraining Governance")
         st.write(
-            f"**Decision:** {r['decision']}  
-"
-            f"**Confirmed trigger features:** {r['trigger_features'] or 'None'}  
-"
-            f"**Automatic retraining enabled:** {bool(r['automatic_retraining_enabled'])}"
+            "\n".join(
+                [
+                    f"**Decision:** {r['decision']}",
+                    f"**Confirmed trigger features:** {r['trigger_features'] or 'None'}",
+                    f"**Automatic retraining enabled:** {bool(r['automatic_retraining_enabled'])}",
+                ]
+            )
         )
 
     st.subheader("Matured-Label Performance")
