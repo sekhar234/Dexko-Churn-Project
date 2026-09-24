@@ -8,16 +8,24 @@ Phase 7 trains the H14 category-loss model entirely offline from the Phase 6 lab
 - Raw feature count: **44**
 - Categorical features: `customergroupname_current`, `mgrl1`
 - Remaining 42 inputs are numeric
-- Algorithm: XGBoost classifier
+- Training API: native `xgboost.train`
 - Objective: `binary:logistic`
 - Evaluation metric: `aucpr`
 - Tree method: `hist`
 - Random seed: 42
-- Maximum H14 estimators: 1000
+- Maximum H14 boosting rounds: 1000
 - Early stopping: 50 rounds
 
 The local deterministic parameter set uses midpoint values from the production H14 search space.
-This keeps laptop runs reproducible while preserving the production model family and training behavior.
+
+## Why scikit-learn is not required
+
+The offline implementation intentionally avoids scikit-learn compiled extensions because some
+Windows App Control policies block native scikit-learn `.pyd` files inside user-managed virtual
+environments.
+
+Preprocessing is implemented with pandas/NumPy and persisted as JSON. The model is trained through
+native XGBoost, so the model contract is preserved without depending on scikit-learn.
 
 ## Population
 
@@ -43,13 +51,14 @@ The test partition is not supplied to XGBoost during fitting or early stopping.
 
 ## Encoding
 
-The encoder is fitted **only on the training partition**:
+The encoder is fitted only on the training partition:
 
-- numeric features: median imputation
-- categorical features: most-frequent imputation + OneHotEncoder
-- unknown categories: ignored safely at validation/test/scoring time
+- numeric features: training median imputation
+- categorical features: training mode for missing values
+- categorical encoding: deterministic one-hot columns learned from training only
+- unseen validation/test/scoring categories: all-zero category block
 
-The fitted encoder is persisted with the model.
+The encoder contract is persisted to `encoder.json`.
 
 ## Metrics
 
@@ -61,15 +70,13 @@ Each partition records:
 - positive rate
 - row count
 
-Overfit gaps are also recorded.
-
 Current governance gates mirrored locally:
 
 - validation AUC >= 0.70
 - validation AP >= 0.25
 - AUC train-valid gap <= 0.20
 
-The training output also evaluates the untouched test split against the same minimum AUC/AP thresholds.
+The untouched test split is evaluated separately.
 
 ## MLflow
 
@@ -92,28 +99,24 @@ Model artifacts are stored under:
 including:
 
 - `model.json`
-- `encoder.joblib`
+- `encoder.json`
 - `metrics.json`
 - `metadata.json`
 - `test_predictions.parquet`
 
-These generated artifacts are intentionally excluded from Git.
+Generated artifacts are intentionally excluded from Git.
 
 ## Local commands
 
-After pulling the Phase 7 branch:
-
 ```powershell
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 python scripts\run_model_training.py
 python scripts\validate_model_training.py
 pytest -q
 ```
 
-Optional MLflow UI from the repository root:
+Optional MLflow UI:
 
 ```powershell
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
-
-Then open the local URL printed by MLflow.
