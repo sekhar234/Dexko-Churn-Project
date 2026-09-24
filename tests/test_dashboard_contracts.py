@@ -21,3 +21,11 @@ def test_phase11_required_tables():
     assert "drift_metrics" in required
     assert "dashboard_metadata" in required
     assert "pipeline_stage_status" in required
+
+
+def test_streamlit_app_compiles():
+    from pathlib import Path
+    import ast
+
+    app = Path(__file__).resolve().parents[1] / "dashboard" / "app.py"
+    ast.parse(app.read_text(encoding="utf-8"))
