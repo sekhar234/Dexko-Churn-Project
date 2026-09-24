@@ -10,24 +10,25 @@ TRAIN_ELIGIBLE_COL = "train_eligible_14"
 
 CATEGORICAL_FEATURES = ["customergroupname_current", "mgrl1"]
 
-XGB_PARAMS = {
+XGB_TRAIN_PARAMS = {
     "objective": "binary:logistic",
     "eval_metric": "aucpr",
-    "random_state": RANDOM_STATE,
+    "seed": RANDOM_STATE,
     "tree_method": "hist",
-    "n_jobs": -1,
-    "n_estimators": 1000,
-    "early_stopping_rounds": 50,
-    # Production search-space midpoint defaults for deterministic local training.
+    "nthread": -1,
+    # Production H14 search-space midpoint defaults for deterministic local training.
     "max_depth": 4,
     "min_child_weight": 6.0,
-    "reg_lambda": 2.0,
-    "reg_alpha": 1.0,
+    "lambda": 2.0,
+    "alpha": 1.0,
     "colsample_bytree": 0.65,
     "subsample": 0.75,
     "gamma": 0.10,
-    "learning_rate": 0.08,
+    "eta": 0.08,
 }
+
+NUM_BOOST_ROUND = 1000
+EARLY_STOPPING_ROUNDS = 50
 
 PROMOTION_GATES = {
     "min_auc": 0.70,
