@@ -222,3 +222,64 @@ The dashboard includes an executive visual system on top of the Phase 11 data co
 - reusable presentation helpers in `src/dashboard/ui.py`
 
 The visual layer does not alter scoring, SHAP, rollup, monitoring, or business-output calculations.
+
+
+## Interactive source upload extension
+
+The local application now includes a **Data Upload** page before the reporting views.
+
+Supported required source tables:
+
+- `dimcustomer`
+- `factsalesinvoice`
+- `dimproduct`
+- `dimwarehouselocation`
+- `dimcustomershipto`
+
+Supported file formats:
+
+- CSV
+- Parquet
+
+The upload page validates each file against the authoritative source contract in
+`src/synthetic/contracts.py`.
+
+Current upload checks include:
+
+- file readability
+- non-empty dataset
+- all required columns present
+- extra-column visibility
+- exact duplicate-row count
+- source key completeness
+- dimension-key duplicate warnings
+- invoice date parsing and date range
+- numeric compatibility for invoice value / quantity and customer credit
+
+Each table is classified as:
+
+- `READY`
+- `READY_WITH_WARNINGS`
+- `FAIL`
+- `MISSING`
+
+A bundle can be staged only when all five required source files have no fatal
+validation failure.
+
+Validated bundles are written to an isolated directory:
+
+```text
+data/uploads/UPLOAD_YYYYMMDD_HHMMSS/
+├── edw/
+│   ├── dimcustomer.csv|parquet
+│   ├── factsalesinvoice.csv|parquet
+│   ├── dimproduct.csv|parquet
+│   ├── dimwarehouselocation.csv|parquet
+│   └── dimcustomershipto.csv|parquet
+└── upload_validation.json
+```
+
+The upload step deliberately does **not** overwrite `data/source/edw` and does
+not automatically execute scoring. Promotion and pipeline execution are separate
+controlled steps so a bad or unintended upload cannot replace the currently
+working source dataset.
