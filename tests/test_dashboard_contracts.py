@@ -3,6 +3,7 @@ from src.dashboard.contracts import DASHBOARD_PAGES, REQUIRED_TABLES
 
 def test_phase11_dashboard_pages():
     assert DASHBOARD_PAGES == [
+        "Data Upload",
         "Executive Overview",
         "Customer Workbench",
         "Customer 360",
@@ -36,7 +37,12 @@ def test_dashboard_visual_assets_compile_and_exist():
     import ast
 
     root = Path(__file__).resolve().parents[1]
-    for relative in ["dashboard/app.py", "src/dashboard/ui.py"]:
+    for relative in [
+        "dashboard/app.py",
+        "src/dashboard/ui.py",
+        "src/dashboard/upload.py",
+        "src/dashboard/upload_ui.py",
+    ]:
         path = root / relative
         ast.parse(path.read_text(encoding="utf-8"))
 
