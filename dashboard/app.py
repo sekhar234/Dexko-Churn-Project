@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from src.dashboard.data import DB_PATH, distinct_values, query, risk_movement, table_exists
+from src.dashboard.upload_ui import render_upload_center
 from src.dashboard.ui import (
     MOVEMENT_COLORS,
     RISK_COLORS,
@@ -785,41 +786,66 @@ def pipeline_health() -> None:
         )
 
 
-if not DB_PATH.exists():
-    st.error("Dashboard database has not been built yet.")
-    st.code("python scripts\\build_dashboard_db.py")
-    st.stop()
-
 inject_css(ROOT / "dashboard" / "styles.css")
 
-meta = query("SELECT * FROM dashboard_metadata LIMIT 1").iloc[0]
+db_ready = DB_PATH.exists()
+meta = (
+    query("SELECT * FROM dashboard_metadata LIMIT 1").iloc[0]
+    if db_ready
+    else None
+)
 
 st.sidebar.markdown("## ◈ DexKo Churn")
 st.sidebar.caption("Customer Success Intelligence")
 st.sidebar.markdown("---")
 
 nav = {
-    "◉ Executive Overview": "Executive Overview",
-    "⌕ Customer Workbench": "Customer Workbench",
-    "◎ Customer 360": "Customer 360",
-    "▦ Category Intelligence": "Category Intelligence",
-    "↕ Risk Movement": "Risk Movement",
-    "◇ Model Health": "Model Health",
-    "✓ Pipeline Health": "Pipeline Health",
+    "⇧ Data Upload": "Data Upload",
 }
-selected_nav = st.sidebar.radio("Navigate", list(nav.keys()), label_visibility="collapsed")
+if db_ready:
+    nav.update(
+        {
+            "◉ Executive Overview": "Executive Overview",
+            "⌕ Customer Workbench": "Customer Workbench",
+            "◎ Customer 360": "Customer 360",
+            "▦ Category Intelligence": "Category Intelligence",
+            "↕ Risk Movement": "Risk Movement",
+            "◇ Model Health": "Model Health",
+            "✓ Pipeline Health": "Pipeline Health",
+        }
+    )
+
+selected_nav = st.sidebar.radio(
+    "Navigate",
+    list(nav.keys()),
+    label_visibility="collapsed",
+)
 page = nav[selected_nav]
 
 st.sidebar.markdown("---")
-st.sidebar.caption("LATEST SNAPSHOT")
-st.sidebar.markdown(f"**{meta['latest_snapshot_dt']}**")
-st.sidebar.markdown(
-    status_badge(str(meta["business_output_status"])),
-    unsafe_allow_html=True,
-)
-st.sidebar.caption("Offline synthetic-data replica")
+if db_ready and meta is not None:
+    st.sidebar.caption("LATEST SNAPSHOT")
+    st.sidebar.markdown(f"**{meta['latest_snapshot_dt']}**")
+    st.sidebar.markdown(
+        status_badge(str(meta["business_output_status"])),
+        unsafe_allow_html=True,
+    )
+else:
+    st.sidebar.caption("DASHBOARD DATABASE")
+    st.sidebar.markdown(
+        status_badge("NOT BUILT"),
+        unsafe_allow_html=True,
+    )
+    st.sidebar.caption("Start with Data Upload or build the local pipeline.")
 
-if page == "Executive Overview":
+st.sidebar.caption("Offline local application")
+
+if page == "Data Upload":
+    render_upload_center(ROOT)
+elif not db_ready:
+    st.error("Dashboard database has not been built yet.")
+    st.code("python scripts\\build_dashboard_db.py")
+elif page == "Executive Overview":
     executive_overview()
 elif page == "Customer Workbench":
     customer_workbench()
