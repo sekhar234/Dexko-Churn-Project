@@ -22,6 +22,7 @@ OPTIONAL_TABLES = [
 ]
 
 DASHBOARD_PAGES = [
+    "Data Upload",
     "Executive Overview",
     "Customer Workbench",
     "Customer 360",
