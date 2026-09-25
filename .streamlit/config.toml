@@ -11,3 +11,6 @@ gatherUsageStats = false
 
 [client]
 showErrorDetails = true
+
+[server]
+maxUploadSize = 1024
